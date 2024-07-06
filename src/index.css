@@ -1,0 +1,19 @@
+:root {
+ --body: #ffffff;
+ --dots: #ff686b;
+ --team: #a5ffd6;
+ --enemy: #ffa69e;
+ --line: #84dcc6;
+}
+
+html {
+  background-color: var(--body);
+}
+
+.title {
+  font-family: "Comic Neue";
+  text-align: center;
+  font-size: 50px;
+  font-weight: 700;
+  color: var(--dots);
+}
