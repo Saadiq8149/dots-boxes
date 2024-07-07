@@ -1,13 +1,13 @@
 import React from "react"
 import './App.css'
-import Grid from "./components/Grid"
+import Game from "./components/Game"
 
 function App() {
 
   return (
     <div>
       {/* <h1 className="title">DOTS AND BOXES</h1> */}
-      <Grid/>
+      <Game/>
     </div>
   )
 }

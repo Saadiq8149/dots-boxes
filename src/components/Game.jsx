@@ -1,9 +1,12 @@
 import React from "react";
 import { nanoid } from "nanoid";
 
-const SIZE_BOARD = 2;
+import ScoreDisplay from "./ScoreDisplay";
+import Ui from "./Ui";
 
-export default function Grid() {
+const SIZE_BOARD = 7;
+
+export default function Game() {
 
     // Dots --> {id, pos(x, y), selected}
     function createNewDots() {
@@ -48,7 +51,7 @@ export default function Grid() {
         let x = 0
         let y = 0
         for (let i = 0; i<(SIZE_BOARD)*(SIZE_BOARD); i++) {
-            newBoxes.push({id: nanoid(), pos:{x:x, y:y}, lines: [false, false, false, false], dots: getDots(x, y), filled: false})
+            newBoxes.push({id: nanoid(), pos:{x:x, y:y}, lines: [false, false, false, false], dots: getDots(x, y), filled: false, turnFormed: null})
             if (x == SIZE_BOARD-1) {
                 x = 0;
                 y++;
@@ -59,8 +62,12 @@ export default function Grid() {
         return newBoxes
     }
 
+    // Other states to handle game state
     const [boxes, updateBoxes] = React.useState(createNewBoxes())
     const [selected, updateSelected] = React.useState([])
+    const [currentTurn, changeTurn] = React.useState(0)
+    const [score, updateScore] = React.useState({team: 0, enemy:0})
+    const [gameEnd, toggleGame] = React.useState(false)
 
     function drawLine(selectedDots, box) {
         // indices represent the position of the dots
@@ -91,13 +98,48 @@ export default function Grid() {
                     const line = drawLine(selectedDots, box)
                     if (line != -1) {
                         lines[line] = true;
+                        if (currentTurn == 0) {
+                            changeTurn(1)
+                        } else {
+                            changeTurn(0)
+                        }
                     }
                 }
                 const filled = lines.filter((line) => line==true)
                 const colored = filled.length == 4 ? true : false
-                return {...box, lines: lines, filled: colored}
+                let turnFormed;
+                if (colored && !box.filled) {
+                    turnFormed = currentTurn
+                    if (currentTurn == 0) {
+                        updateScore(prevScore => {
+                            return {...prevScore, team: prevScore.team+=1}
+                        })
+                    } else {
+                        updateScore(prevScore => {
+                            return {...prevScore, enemy: prevScore.enemy+=1}
+                        })
+                    }
+                } else {
+                    turnFormed = box.turnFormed
+                }
+                return {...box, lines: lines, filled: colored, turnFormed: turnFormed}
             })
         })
+    }
+
+    function allBoxesFilled() {
+        return (
+            boxes.filter(box => box.filled).length == boxes.length ? true : false
+        )
+    }
+
+    function resetGame() {
+        if (gameEnd) {
+            updateDots(createNewDots())
+            updateBoxes(createNewBoxes())
+            updateScore({team: 0, enemy: 0})
+            toggleGame(false)
+        }
     }
 
     // Syncing the selected dots list with dots array state
@@ -138,29 +180,50 @@ export default function Grid() {
                 })
             }
         }
+        if (allBoxesFilled()) {
+            toggleGame(true)
+        }
     }, [boxes])
 
+    React.useEffect(() => {
+        if (gameEnd) {
+            if (score.team > score.enemy) {
+                console.log("You won")
+            } else if (score.enemy > score.team) {
+                console.log("You lost")
+            } else {
+                console.log("Tie")
+            }
+            setTimeout(resetGame, 2500)
+        }
+
+    }, [gameEnd])
+
     function select(event, id) {
-        updateDots(prevDots => {
-            return (
-                prevDots.map(dot => {
-                    return dot.id == id ? {...dot, selected: !dot.selected} : {...dot}
-                })
-            )
-        })
+        if (!gameEnd) {
+            updateDots(prevDots => {
+                return (
+                    prevDots.map(dot => {
+                        return dot.id == id ? {...dot, selected: !dot.selected} : {...dot}
+                    })
+                )
+            })
+        }
     }
 
     function setStyles(id) {
-        const LINE = '2px solid black'
+        const LINE = '3px solid var(--line)'
         const NOLINE = '0px'
         for (let i = 0; i<boxes.length; i++) {
             if (boxes[i].id == id) {
                 const lines = boxes[i].lines
+                const color = boxes[i].turnFormed == 0 ? "var(--team)" : "var(--enemy)"
                 const styles = {
                     borderTop: (lines[0]) ? LINE : NOLINE,
                     borderBottom: (lines[2]) ? LINE : NOLINE,
                     borderLeft: (lines[3]) ? LINE : NOLINE,
                     borderRight: (lines[1]) ? LINE : NOLINE,
+                    backgroundColor: boxes[i].filled ? color : "none"
                 }
                 return styles
             }
@@ -168,23 +231,29 @@ export default function Grid() {
     }
 
     const dotElements = dots.map((dot) => {
-        return <span id={dot.id} onClick={(event) => select(event, dot.id)} className={`dot ${dot.selected && "selected"}`}></span>
+        return <span key={dot.id} id={dot.id} onClick={(event) => select(event, dot.id)} className={`dot ${dot.selected && "selected"}`}></span>
     })
     const boxElements = boxes.map((box) => {
         const styles = setStyles(box.id)
-        return <div id={box.id} style={styles} className={`box ${box.filled && "colored"}`}></div>
+        return <div key={box.id} id={box.id} style={styles} className="box"></div>
     })
     const gameElements = {dots: dotElements, boxes: boxElements}
 
-
     return (
         <div>
-            <div className="grid-dots">
-                {gameElements.dots}
+            <div className="ui-container">
+                <ScoreDisplay score={{enemy: score.enemy, team: score.team}}/>
+                <Ui gameEnd={gameEnd}/>
             </div>
-            <div className="grid-boxes">
-                {gameElements.boxes}
+            <div className="game">
+                <div className="grid-dots">
+                    {gameElements.dots}
+                </div>
+                <div className="grid-boxes">
+                    {gameElements.boxes}
+                </div>
             </div>
         </div>
+
     )
 }

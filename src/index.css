@@ -1,9 +1,10 @@
 :root {
- --body: #ffffff;
- --dots: #ff686b;
- --team: #a5ffd6;
- --enemy: #ffa69e;
- --line: #84dcc6;
+ --body: #222831;
+ --dots: #EEEEEE;
+ --team: #90dfe3;
+ --enemy: #FF6969;
+ --line: #FFF5E1;
+ --select: #ffff01;
 }
 
 html {
